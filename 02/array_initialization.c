@@ -10,6 +10,10 @@ void try_initialize_array ( void )
 	// //@ loop invariant I1: \forall integer j; 0 <= j < i ==> array[j] == 1 - j;
 	for (int i = 0; i < 5; i++)
 	{
+		// Try uncommenting one of following lines:
+		// i = -1; // Runtime error
+		// i = 0;  // No error, but does not terminate. Invariant is preserved
+
 		array[i] = 1 - i;
 	}
 
