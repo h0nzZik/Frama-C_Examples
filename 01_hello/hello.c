@@ -1,3 +1,13 @@
+/*@
+ 	requires x > 0;
+	requires y > 1;
+	ensures \result >= 0;
+ */
+int divide ( int x, int y)
+{
+	return x / y;
+}
+
 
 int Frama_C_interval ( int, int );
 
