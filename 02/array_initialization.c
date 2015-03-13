@@ -5,7 +5,7 @@ void try_initialize_array ( void )
 {
 	int array[5];
 
-	// For proving asserts at the end of this function,
+	// To prove asserts at the end of this function,
 	// uncomment following loop invariant.
 	// //@ loop invariant I1: \forall integer j; 0 <= j < i ==> array[j] == 1 - j;
 	for (int i = 0; i < 5; i++)
