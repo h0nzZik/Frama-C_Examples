@@ -22,10 +22,15 @@
 
 \lstset{
 	language=C++,
-	basicstyle=\ttfamily,
-	keywordstyle=\color{red}
+	basicstyle=\ttfamily\footnotesize,
+%	keywordstyle=\color{red}
 }
 
+% see http://tex.stackexchange.com/questions/130643/nested-itemize-environment-affects-vertical-spacing-of-parent-itemize-environmen
+% redefine default beamer item labels
+\setitemize{label=\usebeamerfont*{itemize item}%
+	  \usebeamercolor[fg]{itemize item}
+	    \usebeamertemplate{itemize item}}
 
 \begin{document}
 
@@ -91,7 +96,7 @@
 \subsection{Jazykové konstrukce}
 
 \defverbatim[colored]\lstBasicAssert{
-\begin{lstlisting}[language=C++,basicstyle=\ttfamily,keywordstyle=\color{red}]
+\begin{lstlisting}[language=C++]
 int x = 17;
 /*@ assert x > 5 */
 \end{lstlisting}
@@ -228,8 +233,18 @@ void sort ( int *array, size_t len);
 	%FIXME: 'command se zobrazi cervene, protoze je to jeden z builtinu bashe
 	\item Možno předefinovat přepínačem \lstinline[language=bash]{\-cpp-command}
 	\item Frama-C umí předzpracovat i anotace (s GCC)
+	\item Rozpracovaný projekt je možné uložit a znovu načíst
 	\item Viz soubor build.mk
 \end{itemize}
+\end{frame}
+
+
+\begin{frame}{Drobnosti}
+	\begin{itemize}
+		\item RTE plugin generuje anotace pro obvyklé runtime chyby
+		\item Kombinace RTE + Value může prokázat absenci runtime chyb
+		\item Uložený projekt je možné načíst do programu frama-c-gui
+	\end{itemize}
 \end{frame}
 
 \subsection{Value plugin}
@@ -239,6 +254,48 @@ void sort ( int *array, size_t len);
 			\item Abstraktní interpretace
 			\item Počítá variační domény proměnných
 			\item Overaproximace - dokazuje korektnost
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Variační domény}
+	\begin{itemize}
+			\item Množina možných hodnot, které může obsahovat daná proměnná.
+			\item Různé způsoby zápisu
+			\begin{itemize}
+				\item Výčtem \( \{ 2, 12, 22, 32, 42 \} \)
+				\item Intervalem \( [2 \ldots 42], 2 \% 10 \)
+			\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Ukázka (01\_hello/hello.c) - 1}
+	\begin{figure}
+		\includegraphics[scale=0.3]{./img/value_01.png}
+	\end{figure}
+\end{frame}
+
+\defverbatim[colored]\lstFirstValueAnalysis{
+\begin{lstlisting}[language=bash]
+$ git clone https://github.com/h0nzZik/Frama-C_Examples.git
+$ cd Frama-C_Examples/01_hello
+$ make
+$ frama-c-gui -load project_after_analysis
+\end{lstlisting}
+}
+
+
+\begin{frame}{Ukázka (01\_hello/hello.c) - 2}
+	\lstFirstValueAnalysis
+	\begin{itemize}
+			\item Informace vypsané během analýzy jsou k dispozici i v gui
+			\item Zajímavé jsou řádky začínající \texttt{hello.c:123:[value]}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Ukázka (01\_hello/hello.c) - 3}
+\texttt{hello.c:17:[value] Assertion 'rte,index\_bound' got status unknown.}
+	\begin{itemize}
+			\item Nelze ověřit, že zápis do pole proběhne v pořádku.
 	\end{itemize}
 \end{frame}
 
