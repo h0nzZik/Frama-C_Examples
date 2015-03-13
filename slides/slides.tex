@@ -10,6 +10,8 @@
 \usepackage{enumitem}
 \usepackage{listings}
 
+% TODO: How to use unicode with listings?
+
 \author{Jan Tušil}
 \title{První kroky s Frama-C}
 %\setbeamercovered{transparent} 
@@ -195,6 +197,7 @@ for ( int i = 0; i < 7; i++ ) {
 /*@
 requires \valid ( array + (0 .. ( len-1 ) ) );
 ensures is_sorted ( array, len );
+assigns \nothing;
  */
 void sort ( int *array, size_t len);
 \end{lstlisting}
@@ -247,7 +250,7 @@ void sort ( int *array, size_t len);
 	\end{itemize}
 \end{frame}
 
-\subsection{Value plugin}
+\subsection{Value plugin (+ RTE)}
 
 \begin{frame}{Value plugin - Principy}
 	\begin{itemize}
@@ -289,17 +292,260 @@ $ frama-c-gui -load project_after_analysis
 	\begin{itemize}
 			\item Informace vypsané během analýzy jsou k dispozici i v gui
 			\item Zajímavé jsou řádky začínající \texttt{hello.c:123:[value]}
+			\item Gui zobrazuje variační domény hodnoty proměnných na kartě "Information"
 	\end{itemize}
 \end{frame}
 
+\defverbatim[colored]\lstFirstValueMainPartOne{
+\begin{lstlisting}[language=C++]
+int main ( int argc, char *argv[] ) {
+/*@ assert rte: index_bound: 0 <= argc; */
+/*@ assert rte: index_bound: argc < 25; */
+array[argc] = 7;
+\end{lstlisting}
+}
+
+
 \begin{frame}{Ukázka (01\_hello/hello.c) - 3}
+	\lstFirstValueMainPartOne
 \texttt{hello.c:17:[value] Assertion 'rte,index\_bound' got status unknown.}
 	\begin{itemize}
 			\item Nelze ověřit, že zápis do pole proběhne v pořádku.
+			\item Mimochodem, tyto asserty v původním zdrojovém kódu nejsou, byly vygenerovány pluginem RTE. Proto jsou označeny identifikátorem \texttt{rte}.
+	\end{itemize}
+\end{frame}
+
+\defverbatim[colored]\lstFirstValueMainPartTwo{
+\begin{lstlisting}[language=C++]
+idx = Frama_C_interval(-1,26);
+idx /= 2;
+/*@ assert rte: index_bound: 0 < idx; */
+/*@ assert rte: index_bound: idx < 25; */
+array[idx] = 0x1234;
+\end{lstlisting}
+}
+
+\begin{frame}{Ukázka (01\_hello/hello.c) - 4}
+	\lstFirstValueMainPartTwo
+	\texttt{hello.c:20:[value] Assertion 'rte,index\_bound' got status valid.}
+	\begin{itemize}
+		\item Funkce \texttt{Frama\_C\_interval} vrací nedeterministickou hodnotu ze zadaného intervalu. Je deklarována (i s anotacemi) v souboru \texttt{FRAMA\_C\_SHARE/builtin.h}.
+		\item Value plugin spočítá, že po dělení bude proměnná idx ležet v intervalu
+			\( [ 0 \ldots 13 ] \)
+	\end{itemize}
+\end{frame}
+
+
+\defverbatim[colored]\lstFirstValueMainPartThree{
+\begin{lstlisting}{language=C++}
+/*@ assert rte: signed_overflow: (int)(idx*2)+3 <= 2147483647; */
+/*@ assert rte: signed_overflow: -2147483648 <= idx*2; */
+/*@ assert rte: signed_overflow: idx*2 <= 2147483647; */
+idx = idx * 2 + 3;
+\end{lstlisting}
+} % \defverbatim
+
+
+\begin{frame}{Ukázka (01\_hello/hello.c) - 5}
+	\lstFirstValueMainPartThree
+	\begin{itemize}
+			\item Mnoho lidí neví, že výsledek znaménkového přetečení 
+				v jazyce C není definován. RTE plugin to ale ví.
+			\item Value určil \( \texttt{idx} \in [3..29],1 \%2 \)
+
+	\end{itemize}
+\end{frame}
+
+\defverbatim[colored]\lstFirstValueMainPartFour{
+\begin{lstlisting}{language=C++}
+/*@ assert rte: index_bound: 0 <= idx; */
+/*@ assert rte: index_bound: idx < 25; */
+array[idx] = 0x4567;
+\end{lstlisting}
+} % \defverbatim
+
+\begin{frame}{Ukázka (01\_hello/hello.c) - 6}
+	\lstFirstValueMainPartFour
+
+	\begin{itemize}
+			\item Value plugin ví, že jistě \( \texttt{idx} \in [3..29],1 \%2 \),
+				tedy první assert projde.
+			\item Ale protože Value pracuje s overaproximací, nedokáže rozhodnout,
+				zda dojde k narušení druhého assertu.
+			\item Pokud dojde k runtime chybě, nemá smysl pokračovat v běhu programu.
+				Z toho důvodu po provedení uvedeného příkazu Value plugin uvažuje
+				pouze hodnoy z intervalu \( [3..23],1\%2 \).
+	\end{itemize}
+\end{frame}
+
+\defverbatim[colored]\lstFirstValueMainPartFive{
+\begin{lstlisting}[language=C++]
+idx += 28;
+/*@ assert rte: index_bound: 0 <= idx; */
+/*@ assert rte: index_bound: idx < 25; */
+array[idx] = 15;
+\end{lstlisting}
+} % \defverbatim
+
+\begin{frame}{Ukázka (01\_hello/hello.c) - 7}
+	\lstFirstValueMainPartFive
+	\texttt{hello.c:26:[value] Assertion 'rte,index\_bound' got status invalid
+	(stopping propagation).}
+	\begin{itemize}
+		\item Po přičtení bude hodnota proměnné \texttt{idx} větší než 25.
+			Assert tedy neprošel.
+		\pause \item Kontrola: jaký je zde rozdíl oproti předchozímu případu?
+		\pause \item Následující kód je označen za nedosažitelný. Co to znamená v praxi?
 	\end{itemize}
 \end{frame}
 
 \subsection{WP plugin}
+\begin{frame}{Motivace}
+	\begin{itemize}
+		\item Value plugin umí dokázat některé vlastnosti funkcí
+		\pause \item Některé ale ne.
+		\item Vyhodnocování složitých smyček je buď nepřesné
+			(odhad invariantu), nebo pomalé (rozbalování).
+		\item WP plugin umožňuje dokazovat vlastnosti programů podobně, jako jsme zvyklí dokazovat vlastnosti algoritmů - deduktivně.
+		\item Silná podpora Design by Contract
+	\end{itemize}
+\end{frame}
+
+\defverbatim[colored]\lstExIIwpBash{
+\begin{lstlisting}[language=bash]
+$ cd Frama-C_Examples/02
+$ make
+$ frama-c -load frama_project -wp-fct try_initialize_array
+\end{lstlisting}
+}
+
+
+\begin{frame}{Ukázkový kód}
+	\lstExIIwpBash
+	\texttt{[wp] 7 goals scheduled}\\
+	\texttt{[wp] [Qed] Goal some\_assert\_1 : Valid} \\
+	\texttt{[wp] [Alt-Ergo] Goal some\_assert\_2 : Unknown (Qed:2ms)}
+	\begin{itemize}
+		\item Soubor \texttt{02/array\_initialization.c}
+		\item (Vyplatí se prozkoumat dodané Makefily)
+		\item Třeba mít nainstalován theorem prover Alt-Ergo
+		\item Možné načíst pomoci \texttt{frama-c-gui}
+	\end{itemize}
+\end{frame}
+
+\defverbatim[colored]\lstExIIwpItryI{
+\begin{lstlisting}[language=C++]
+int array[5];
+for (int i = 0; i < 5; i++) {
+	array[i] = 1 - i;
+}
+if ( array[2] == -2 )
+	array[2]++;
+//@ assert array[2] != -2;	
+//@ assert array[3] == -2;
+\end{lstlisting}
+} % \defverbatim
+
+\begin{frame}
+	\lstExIIwpItryI
+	\begin{itemize}
+		\item Toto již jsou ručně psané anotace.
+		\item První assert plyne s předchozího IFu.
+		\item WP o stavu programu po skončení cyklu nebo volání funkce nepředpokládá vůbec nic. Proto se nepodaří dokázat druhý assert.
+		\pause \item Value to zvládne, pokud mu povolíme trávit více času rozbalováním smyček.
+	\end{itemize}
+\end{frame}
+
+\defverbatim[colored]\lstExIIwpItryII{
+\begin{lstlisting}[language=C++]
+int array[5];
+/*@ loop invariant: \forall integer j;
+    0 <= j < i ==> array[j] == 1 - j; */
+for (int i = 0; i < 5; i++) {
+/*@ assert rte: index_bound: 0 <= i; */
+	array[i] = 1 - i;
+}
+if ( array[2] == -2 )
+	array[2]++;
+//@ assert array[2] != -2;	
+//@ assert array[3] == -2;
+\end{lstlisting}
+} % \defverbatim
+
+\begin{frame}{S invariantem}
+	\lstExIIwpItryII
+	\begin{itemize}
+			\item Z invariantu lze snadno dokázat požadované vlastnosti.
+			\item Invariant ovšem platí pouze za podmínky, že nenastane runtime chyba.
+			\item Pokud nelze dokázat RTE assert, invariant nemusí platít.
+	\end{itemize}
+\end{frame}
+
+\defverbatim[colored]\lstExIIwpItryIII{
+\begin{lstlisting}[language=C++]
+int array[5];
+/*@ loop invariant: \forall integer j;
+    0 <= j < i ==> array[j] == 1 - j; */
+for (int i = 0; i < 5; i++) {
+	i = -1;
+/*@ assert rte: index_bound: 0 <= i; */
+	array[i] = 1 - i;
+}
+\end{lstlisting}
+} % \defverbatim
+
+\begin{frame}{Podmíněná platnost}
+	\lstExIIwpItryIII
+	\begin{itemize}
+		\item Dojde k runtime chybě (možno zjistit s pomocí Value pluginu)
+		\item WP dokáže totéž, co v předchozím případě.
+	\end{itemize}
+\end{frame}
+
+\defverbatim[colored]\lstExIIwpItryIV{
+\begin{lstlisting}[language=C++]
+int array[5];
+/*@ loop invariant: \forall integer j;
+    0 <= j < i ==> array[j] == 1 - j; */
+for (int i = 0; i < 5; i++) {
+	i = 0;
+/*@ assert rte: index_bound: 0 <= i; */
+	array[i] = 1 - i;
+}
+\end{lstlisting}
+} % \defverbatim
+
+\begin{frame}{Terminace}
+	\lstExIIwpItryIV
+	\begin{itemize}
+		\item Invariant bezpodmínečně platí (WP ho dokáže)
+		\item Tedy asserty také platí
+		\pause \item Naneštěstí cyklus neterminuje
+	\end{itemize}
+\end{frame}
+
+\defverbatim[colored]\lstExIIwpItryV{
+\begin{lstlisting}[language=C++]
+int array[5];
+/*@ loop invariant: 0 <= i <= 5 &&
+(   \forall integer j;
+0 <= j < i ==> array[j] == 1 - j);
+	loop variant 5 - i */
+for (int i = 0; i < 5; i++) {
+/*@ assert rte: index_bound: 0 <= i; */
+	array[i] = 1 - i;
+}
+\end{lstlisting}
+} % \defverbatim
+
+\begin{frame}{Správné řešení}
+	\lstExIIwpItryV
+	\begin{itemize}
+		\item Omezení na proměnnou \texttt{i} vede k platnosti RTE assertu.
+		\item Hodnota variantu se snižuje v každém kroku cyklu až k nule.
+		\item Program je korektní a terminuje. U rozumných smyček ale není třeba terminaci ověřovat ( a psát varianty)
+	\end{itemize}
+\end{frame}
 
 \section{Omezení}
 \subsection{Jazyk}
