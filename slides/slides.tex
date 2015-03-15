@@ -11,6 +11,7 @@
 \usepackage{listings}
 
 % TODO: How to use unicode with listings?
+% Jak pouzivat spravne uvozovky?
 
 \author{Jan Tušil}
 \title{První kroky s Frama-C}
@@ -40,8 +41,7 @@
 \titlepage
 \end{frame}
 
-\begin{frame}
-\frametitle{Table of Contents}
+\begin{frame}{Obsah}
 \tableofcontents[]
 \end{frame}
 
@@ -53,6 +53,13 @@
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Jak získat?}
+	\begin{itemize}
+		\item Balík frama-c v repozitářích Fedory i Debianu
+		\item Alt-Ergo (theorem prover) tamtéž (hodí se pro WP plugin)
+	\end{itemize}
+\end{frame}
+
 \begin{frame}{Představení}
 
 \begin{figure}
@@ -60,25 +67,52 @@
 \end{figure}
 
 \begin{itemize}
-	\item Statická analýza C kódu
-	\item Založeno na pluginech
-	\item Ověřování proti specifikaci (jazyk ACSL)
-	\item Možná specifikace: absence běhových chyb
+	\item<1-> Modulární platforma pro statickou analýzu C kódu
+	\item<2-> Jádro
+		\begin{itemize}
+				\item<4-> Parsování, preprocessing, ,,linkování'' a normalizace kódu
+				\item<5-> Ukládání/načítání session
+				\item<6-> Uchovávání výsledků práce pluginů
+				\item<7-> Manipulace s AST
+		\end{itemize}
+	\item<3-> Pluginy
+		\begin{itemize}
+				\item<8-> Analýza závislostí
+				\item<9-> Abstraktní interpretace
+				\item<10-> Deduktivní verifikace
+		\end{itemize}
+	\item<11-> Některé pluginy umožňují ověřování programu vůči specifikaci
 \end{itemize}
 
 \end{frame}
 
-\begin{frame}{Jak získat?}
-
+\begin{frame}{Specifikace?}
+	\begin{itemize}
+		\item Možné specifikace:
+			\begin{itemize}
+				\pause \item Za běhu programu nenastane chyba \pause (?)
+				\pause \item Chování programu je definované (dle standardu jazyka).
+				\pause \item Funkce nemodifikuje globální proměnné
+				\pause \item Funkce zachovává vlastnost používané datové struktury
+			\end{itemize}
+		\pause \item Potřeba jazyka pro zápis specifikace.
+	\end{itemize}
 \end{frame}
 
 
 \section{Jazyk ACSL}
 
+\begin{frame}{Jazyk ACSL}
+
+\end{frame}
+
+\subsection{Obecné informace}
+
 \begin{frame}{ACSL - Co je to za jazyk?}
 \begin{itemize}
 	\item ANSI / ISO C Specification language
-	\item V komentářích C kódu.
+	\item Vznikl pro potřeby Frama-C
+	\item Vestavěný v komentářích C kódu.
 	\item Asserty
 	\item Invarianty
 	\item Funkční kontrakty (DbC)
@@ -128,7 +162,7 @@ assert \forall integer i, j;
 \lstQuantifiedAssert
 \begin{itemize}
 	\item Vázaná proměnná má daný typ
-	\item Typ může být uživatelem definovaný
+	\item Typ může být uživatelem definovaný (typedef, struct)
 	\item \texttt{integer} označuje (matematické) celé číslo
 \end{itemize}
 \end{frame}
@@ -190,6 +224,10 @@ for ( int i = 0; i < 7; i++ ) {
 
 \begin{frame}{Invarianty smyček}
 \lstLoopWithInvariant
+	\begin{itemize}
+		\pause \item Invariant musí být platný při (prvním) vstupu do smyčky
+		\pause \item Každý průchod smyčkou musí invariant zachovat
+	\end{itemize}
 \end{frame}
 
 \defverbatim[colored]\lstFunctionContract{
@@ -206,17 +244,27 @@ void sort ( int *array, size_t len);
 \begin{frame}{Funkční kontrakty}
 \lstFunctionContract
 \begin{itemize}
-	\item Paradigma "Design by Contract"
+	\pause \item Co funkce požaduje?
+	\pause \item Co funkce garantuje?
+	\pause \item Co funkce zachovává / modifikuje?
+	\pause \item Paradigma "Design by Contract"
+	\pause \item Kde je problém?
 \end{itemize}
 \end{frame}
 
 \section{Použití Frama-C}
 
+\begin{frame}{Použití Frama-C}
+
+\end{frame}
+
 \begin{frame}{Jednoduché použití}
 \begin{itemize}
 	\item Soubor hello.c je v adresáři 01\_hello
 	\item \lstinline[language=bash]{$ frama-c hello.c -val}
-	\item Jak ověřit větší projekt z více souborů?
+	\pause \item Spustí Value plugin - analýzu možných hodnot proměnných.
+	\pause \item Jak ověřit větší projekt z více souborů?
+	\pause \item Všechny je vypíšeme na řádce.
 \end{itemize}
 \end{frame}
 
@@ -235,7 +283,7 @@ void sort ( int *array, size_t len);
 	\item Výchozí: \lstinline[language=bash]{gcc -C -E -I}
 	%FIXME: 'command se zobrazi cervene, protoze je to jeden z builtinu bashe
 	\item Možno předefinovat přepínačem \lstinline[language=bash]{\-cpp-command}
-	\item Frama-C umí předzpracovat i anotace (s GCC)
+	\pause \item Frama-C umí předzpracovat i anotace (s GCC)
 	\item Rozpracovaný projekt je možné uložit a znovu načíst
 	\item Viz soubor build.mk
 \end{itemize}
@@ -251,6 +299,10 @@ void sort ( int *array, size_t len);
 \end{frame}
 
 \subsection{Value plugin (+ RTE)}
+
+\begin{frame}{Value plugin}
+
+\end{frame}
 
 \begin{frame}{Value plugin - Principy}
 	\begin{itemize}
@@ -400,6 +452,12 @@ array[idx] = 15;
 \end{frame}
 
 \subsection{WP plugin}
+
+\begin{frame}{WP plugin}
+
+\end{frame}
+
+
 \begin{frame}{Motivace}
 	\begin{itemize}
 		\item Value plugin umí dokázat některé vlastnosti funkcí
@@ -547,12 +605,42 @@ for (int i = 0; i < 5; i++) {
 	\end{itemize}
 \end{frame}
 
-\section{Omezení}
-\subsection{Jazyk}
-\begin{frame}{Pouze pro C}
-Nikoliv C++
+
+\section{Závěr}
+
+\subsection{Výhody}
+\begin{frame}{Výhody}
+	\begin{itemize}
+		\item Široká dokumentace
+		\item Snadná instalace
+	\end{itemize}
 \end{frame}
-\subsection{Bugy}
+
+\subsection{Omezení}
+
+\begin{frame}{Omezení}
+\end{frame}
+
+\begin{frame}{Chybějící vlastnosti}
+	\begin{itemize}
+		\item Pouze C (nepodporuje C++)
+		\item Líbilo by se mi:
+			\begin{itemize}
+				\item Třídy, používání jmenných prostorů (šetří psaní)
+			\end{itemize}
+		\item Implementována pouze část ACSL
+		\item Ošklivé chybové hlášky
+	\end{itemize}
+\end{frame}
+
+
+\begin{frame}{Bugy}
+	\begin{itemize}
+		\item Při výpisu chyb nesedí čísla řádků
+		\item Občasný pád grafického rozhraní
+	\end{itemize}
+\end{frame}
+
 
 
 \end{document}
