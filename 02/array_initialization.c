@@ -69,7 +69,18 @@ int main ( int argc, char *argv[] )
 {
 	try_initialize_array();
 	int array[17];
+	try_initialize_given_array ( array, 5, 0 );
+	//@ assert array[1] == 1;
+	//@ assert array[3] == 3;
+
 	try_initialize_given_array ( array + 3, 11, 5 );
+	/*@ assert \forall integer i; 0 <= i < 11 ==>
+		array[i+3] == 5 + i;
+	  */
+	/*@ assert \forall integer i; 3 <= i <= 14 ==>
+	 	array[i] == 2 + i;
+	  */
+	//@ assert array[8+3] == 5 + 8;
 	//@ assert array[11] == 13;
 	
 	// This fails, because precondition is not met
