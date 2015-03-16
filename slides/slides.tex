@@ -1,4 +1,9 @@
 \documentclass[11pt]{beamer}
+
+%\documentclass[handout]{beamer}
+%\usepackage{pgfpages}
+%\pgfpagesuselayout{2 on 1}[a4paper,border shrink=5mm]
+
 \usetheme{Malmoe}
 \usepackage[utf8]{inputenc}
 \usepackage[czech]{babel}
@@ -26,6 +31,7 @@
 \lstset{
 	language=C++,
 	basicstyle=\ttfamily\footnotesize,
+	commentstyle=\fontseries{m}\fontshape{it}
 %	keywordstyle=\color{red}
 }
 
@@ -41,11 +47,15 @@
 \titlepage
 \end{frame}
 
-\begin{frame}{Obsah}
+\begin{frame}{Osnova}
 \tableofcontents[]
 \end{frame}
 
 \section{Úvod}
+
+\begin{frame}{Osnova}
+\tableofcontents[currentsection]
+\end{frame}
 
 \begin{frame}{Materiály k prezentaci}
 \begin{itemize}
@@ -67,7 +77,7 @@
 \end{figure}
 
 \begin{itemize}
-	\item<1-> Modulární platforma pro statickou analýzu C kódu
+	\item<1-> Modulární platforma pro statickou analýzu C (ISO C99) kódu
 	\item<2-> Jádro
 		\begin{itemize}
 				\item<4-> Parsování, preprocessing, ,,linkování'' a normalizace kódu
@@ -102,11 +112,15 @@
 
 \section{Jazyk ACSL}
 
-\begin{frame}{Jazyk ACSL}
+\begin{frame}{Osnova}
+\tableofcontents[currentsection,currentsubsection]
+\end{frame}
+\subsection{Obecné informace}
 
+\begin{frame}{Osnova}
+\tableofcontents[currentsection,currentsubsection]
 \end{frame}
 
-\subsection{Obecné informace}
 
 \begin{frame}{ACSL - Co je to za jazyk?}
 \begin{itemize}
@@ -130,6 +144,11 @@
 
 
 \subsection{Jazykové konstrukce}
+
+\begin{frame}{Osnova}
+\tableofcontents[currentsection,currentsubsection]
+\end{frame}
+
 
 \defverbatim[colored]\lstBasicAssert{
 \begin{lstlisting}[language=C++]
@@ -180,10 +199,12 @@ int array[4] = {-15, 3, 17, 104};
 \begin{frame}{Pointery}
 \lstPointerValidity
 \begin{itemize}
-	\item Predikát \textbackslash valid bere množinu termů
-	\item \(0..3\) označuje množinu \( \{ 0, 1, 2, 3 \} \)
-	\item Význam: výrazy \( \{ array + 0, \ldots , array + 3 \} \) jsou platné ukazatele
-	\item Obvyklá pointer aritmetika
+	\item Ukazuje pointer na platnou paměť?
+	\item Predikát \textbackslash valid se vyhodnotí na true, pokud je každý pointer z~dané množiny platný.
+	\pause \item Zápis \( 0..3 \) označuje range ( tedy množinu \( \{ 0, 1, 2, 3 \} \) )
+	\pause \item Range je možné přičítat k ostatním hodnotám
+	\pause \item Význam: \texttt{array} ukazuje na platnou paměť o délce alespoň 4 intů.
+	\pause \item Nástroj pracuje s obvyklou pointer aritmetikou
 \end{itemize}
 \end{frame}
 
@@ -253,18 +274,17 @@ void sort ( int *array, size_t len);
 \end{frame}
 
 \section{Použití Frama-C}
-
-\begin{frame}{Použití Frama-C}
-
+\begin{frame}{Osnova}
+\tableofcontents[currentsection,currentsubsection]
 \end{frame}
 
 \begin{frame}{Jednoduché použití}
 \begin{itemize}
-	\item Soubor hello.c je v adresáři 01\_hello
 	\item \lstinline[language=bash]{$ frama-c hello.c -val}
 	\pause \item Spustí Value plugin - analýzu možných hodnot proměnných.
 	\pause \item Jak ověřit větší projekt z více souborů?
 	\pause \item Všechny je vypíšeme na řádce.
+	\pause \item Soubor hello.c je v adresáři 01\_hello
 \end{itemize}
 \end{frame}
 
@@ -275,17 +295,19 @@ void sort ( int *array, size_t len);
 \begin{itemize}
 	\pause \item Makra a náhrady textu
 	\pause \item Vkládání (hlavičkových) souborů
+	\pause \item Možno specifikovat, v jakých adresářích se hlavičky nacházejí
 \end{itemize}
 \end{frame}
 
 \begin{frame}{Preprocessing ve Frama-C}
 \begin{itemize}
-	\item Výchozí: \lstinline[language=bash]{gcc -C -E -I}
-	%FIXME: 'command se zobrazi cervene, protoze je to jeden z builtinu bashe
+	\item Výchozí: \lstinline[language=bash]{gcc -C -E -I.}
 	\item Možno předefinovat přepínačem \lstinline[language=bash]{\-cpp-command}
+	\pause \item Frama-C dodává oanotovanou stadardní knihovnu (libc)
 	\pause \item Frama-C umí předzpracovat i anotace (s GCC)
-	\item Rozpracovaný projekt je možné uložit a znovu načíst
-	\item Viz soubor build.mk
+	\pause \item Rozpracovaný projekt je možné uložit a znovu načíst
+	\pause \item \lstinline[language=bash]{frama-c-gui -load frama_project}
+	\pause \item Viz soubor build.mk
 \end{itemize}
 \end{frame}
 
@@ -300,8 +322,8 @@ void sort ( int *array, size_t len);
 
 \subsection{Value plugin (+ RTE)}
 
-\begin{frame}{Value plugin}
-
+\begin{frame}{Osnova}
+\tableofcontents[currentsection,currentsubsection]
 \end{frame}
 
 \begin{frame}{Value plugin - Principy}
@@ -318,8 +340,16 @@ void sort ( int *array, size_t len);
 			\item Různé způsoby zápisu
 			\begin{itemize}
 				\item Výčtem \( \{ 2, 12, 22, 32, 42 \} \)
-				\item Intervalem \( [2 \ldots 42], 2 \% 10 \)
+				\item Intervalem \( [2 \ldots 42], 2 \% 10 \) \pause (stejná množina)
 			\end{itemize}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}{Odbočka - RTE plugin}
+	\begin{itemize}
+			\item RunTime Error annotation generator
+			\pause \item Generuje \texttt{assert}y pro obvyklé runtime chyby a nespecifikované chování
+			\pause \item Je využíván složitějšími pluginy
 	\end{itemize}
 \end{frame}
 
@@ -453,10 +483,9 @@ array[idx] = 15;
 
 \subsection{WP plugin}
 
-\begin{frame}{WP plugin}
-
+\begin{frame}{Osnova}
+\tableofcontents[currentsection,currentsubsection]
 \end{frame}
-
 
 \begin{frame}{Motivace}
 	\begin{itemize}
@@ -535,7 +564,7 @@ if ( array[2] == -2 )
 	\begin{itemize}
 			\item Z invariantu lze snadno dokázat požadované vlastnosti.
 			\item Invariant ovšem platí pouze za podmínky, že nenastane runtime chyba.
-			\item Pokud nelze dokázat RTE assert, invariant nemusí platít.
+			\item Pokud nelze dokázat RTE assert, invariant nemusí platit.
 	\end{itemize}
 \end{frame}
 
@@ -608,6 +637,10 @@ for (int i = 0; i < 5; i++) {
 
 \section{Závěr}
 
+\begin{frame}{Osnova}
+\tableofcontents[currentsection,currentsubsection]
+\end{frame}
+
 \subsection{Výhody}
 \begin{frame}{Výhody}
 	\begin{itemize}
@@ -618,18 +651,15 @@ for (int i = 0; i < 5; i++) {
 
 \subsection{Omezení}
 
-\begin{frame}{Omezení}
-\end{frame}
-
 \begin{frame}{Chybějící vlastnosti}
 	\begin{itemize}
 		\item Pouze C (nepodporuje C++)
-		\item Líbilo by se mi:
+		\pause \item Líbilo by se mi:
 			\begin{itemize}
-				\item Třídy, používání jmenných prostorů (šetří psaní)
+				\pause \item Třídy, používání jmenných prostorů (šetří psaní)
 			\end{itemize}
-		\item Implementována pouze část ACSL
-		\item Ošklivé chybové hlášky
+		\pause \item Implementována pouze část ACSL
+		\pause \item Ošklivé chybové hlášky
 	\end{itemize}
 \end{frame}
 
@@ -640,7 +670,6 @@ for (int i = 0; i < 5; i++) {
 		\item Občasný pád grafického rozhraní
 	\end{itemize}
 \end{frame}
-
 
 
 \end{document}
