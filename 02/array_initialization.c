@@ -6,8 +6,12 @@ void try_initialize_array ( void )
 	int array[5];
 
 	// To prove asserts at the end of this function,
-	// uncomment following loop invariant.
-	// //@ loop invariant I1: \forall integer j; 0 <= j < i ==> array[j] == 1 - j;
+	// uncomment following loop invariant. It might also be helpful to ensure
+	// that i has proper bounds (or use -wp-invariants).
+	// /*@ loop invariant I1:
+	// 0 <= i <= 5 &&
+	// ( \forall integer j; 0 <= j < i ==> array[j] == 1 - j);
+	// loop variant 5 - i; */
 	for (int i = 0; i < 5; i++)
 	{
 		// Try uncommenting one of following lines:
